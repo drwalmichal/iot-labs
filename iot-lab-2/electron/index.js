@@ -1,25 +1,34 @@
+//used to get env variable
+require('dotenv').config();
 document.onkeydown = updateKey;
 document.onkeyup = resetKey;
 
 var server_port = 65432;
-var server_addr = "192.168.3.49";   // the IP address of your Raspberry PI
+var server_addr = process.env.IP_ADDRESS;   // the IP address of your Raspberry PI
 
-function client(){
-    
+//added for logging purposes
+var nodeConsole = require('console');
+var myConsole = new nodeConsole.Console(process.stdout, process.stderr);
+
+function client(input){
     const net = require('net');
-    var input = document.getElementById("message").value;
-
     const client = net.createConnection({ port: server_port, host: server_addr }, () => {
         // 'connect' listener.
-        console.log('connected to server!');
+        myConsole.log('connected to server!');
         // send the message
         client.write(`${input}\r\n`);
+
     });
-    
+    myConsole.log(input)
     // get the data from the server
     client.on('data', (data) => {
-        document.getElementById("bluetooth").innerHTML = data;
-        console.log(data.toString());
+
+        if(input == 'update'){
+            info = data.toString().split(',');
+            document.getElementById('distance').innerHTML = info[0];
+            document.getElementById('power').innerHTML = info[1];
+            document.getElementById('temperature').innerHTML = info[2];
+        }
         client.end();
         client.destroy();
     });
@@ -39,22 +48,24 @@ function updateKey(e) {
     if (e.keyCode == '87') {
         // up (w)
         document.getElementById("upArrow").style.color = "green";
-        send_data("87");
+        client("up");
     }
     else if (e.keyCode == '83') {
         // down (s)
         document.getElementById("downArrow").style.color = "green";
-        send_data("83");
+        client("down");
     }
     else if (e.keyCode == '65') {
         // left (a)
         document.getElementById("leftArrow").style.color = "green";
-        send_data("65");
+        client("left");
     }
     else if (e.keyCode == '68') {
         // right (d)
         document.getElementById("rightArrow").style.color = "green";
-        send_data("68");
+        client("right");
+    }else if (e.keyCode == '69'){
+        client('stop');
     }
 }
 
@@ -70,10 +81,9 @@ function resetKey(e) {
 }
 
 
-// update data for every 50ms
-function update_data(){
-    setInterval(function(){
-        // get image from python server
-        client();
-    }, 50);
-}
+
+
+setInterval(function(){
+    // get image from python server
+    client('update');
+}, 300);
