@@ -3,52 +3,45 @@ import os
 from dotenv import load_dotenv
 from _thread import *
 import threading
-
+import picar_4wd as fc
 load_dotenv()
 
 HOST = os.getenv('IP_ADDRESS') # IP address of your Raspberry PI
 PORT = 65432          # Port to listen on (non-privileged ports are > 1023)
 
-lock = threading.Lock()
 
-def threaded(client,clientInfo):
-    while 1:
-        data = client.recv(1024)
-        if not data:
-            break
-        data = data.decode()
-        print(data)
-
-    #close client socket
-    print('closing connection to:',clientInfo[0])
-
-    #release lock
-    lock.release()
-
-    #close client socket
-    client.close()
-
+power_val = 10
 
 def main():
+    fc.stop()
+    num_threads = 0
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((HOST, PORT))
     s.listen()
     try:
         while 1:
             #accept new client connections
             client, clientInfo = s.accept()
-            #lock acquired by a client
-            lock.acquire()
-            print("Connected to: ", clientInfo[0])
-            #start a new thread for client
-            start_new_thread(threaded, (client,clientInfo))
+            data = client.recv(1024)
+            if data == b'up\r\n':
+                fc.forward(power_val)
+            elif data == b'down\r\n':
+                fc.backward(power_val)
+            elif data == b'right\r\n':
+                fc.turn_right(power_val)
+            elif data == b'left\r\n':
+                fc.turn_left(power_val)
+            elif data == b'stop\r\n':
+                fc.stop()
+            elif data == b'update\r\n':
+                info = f'{fc.get_distance_at(-2)},{fc.power_read()},{fc.utils.cpu_temperature()}'
+                client.sendall(info.encode())
+            client.close()
     except:
-        print("Closing server socket")
+        # print("Closing server socket")
         s.close()
  
-
-        
-            
 
 if __name__ == '__main__':
     main()
