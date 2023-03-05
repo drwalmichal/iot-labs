@@ -1,8 +1,6 @@
 import socket
 import os
 from dotenv import load_dotenv
-from _thread import *
-import threading
 import picar_4wd as fc
 load_dotenv()
 
@@ -13,8 +11,6 @@ PORT = 65432          # Port to listen on (non-privileged ports are > 1023)
 power_val = 10
 
 def main():
-    fc.stop()
-    num_threads = 0
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((HOST, PORT))
